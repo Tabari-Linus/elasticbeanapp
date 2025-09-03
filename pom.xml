@@ -65,6 +65,7 @@
     </dependencies>
 
     <build>
+        <finalName>elasticBean-app</finalName>
         <plugins>
             <!-- Spring Boot Maven Plugin -->
             <plugin>
