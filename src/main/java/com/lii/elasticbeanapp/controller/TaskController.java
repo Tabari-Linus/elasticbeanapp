@@ -3,52 +3,60 @@ package com.lii.elasticbeanapp.controller;
 import com.lii.elasticbeanapp.model.Task;
 import com.lii.elasticbeanapp.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
-@RestController
+@Controller
 @RequestMapping("/tasks")
 public class TaskController {
-
+    @Autowired
     private TaskRepository taskRepository;
 
-
     @GetMapping
-    public List<Task> getAllTasks() {
-        return taskRepository.findAll();
+    public String listTasks(Model model) {
+        model.addAttribute("tasks", taskRepository.findAll());
+        return "tasks";
     }
 
-    @PostMapping
-    public Task createTask(@RequestBody Task task) {
-        return taskRepository.save(task);
+    @GetMapping("/new")
+    public String showTaskForm(Model model) {
+        model.addAttribute("task", new Task());
+        return "task-form.html";
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Task> getTaskById(@PathVariable Long id) {
-        return taskRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    @PostMapping("/save")
+    public String saveTask(@ModelAttribute Task task) {
+        taskRepository.save(task);
+        return "redirect:/tasks";
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Task updatedTask) {
-        return taskRepository.findById(id)
-                .map(task -> {
-                    task.setTitle(updatedTask.getTitle());
-                    task.setDescription(updatedTask.getDescription());
-                    return ResponseEntity.ok(taskRepository.save(task));
-                })
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    @GetMapping("/edit/{id}")
+    public String showEditForm(@PathVariable Long id, Model model) {
+        taskRepository.findById(id)
+                .ifPresent(task -> model.addAttribute("task", task));
+        return "task-form.html";
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
-        if (taskRepository.existsById(id)) {
-            taskRepository.deleteById(id);
-            return ResponseEntity.ok().build();
-        }
-        return ResponseEntity.notFound().build();
+    @PostMapping("/update/{id}")
+    public String updateTask(@PathVariable Long id, @ModelAttribute Task updatedTask) {
+        taskRepository.findById(id).ifPresent(task -> {
+            task.setTitle(updatedTask.getTitle());
+            task.setDescription(updatedTask.getDescription());
+            taskRepository.save(task);
+        });
+        return "redirect:/tasks";
+    }
+
+    @GetMapping("/delete/{id}")
+    public String deleteTask(@PathVariable Long id) {
+        taskRepository.deleteById(id);
+        return "redirect:/tasks";
+    }
+
+    @GetMapping("/")
+    @RequestMapping(value = "/", method = RequestMethod.GET)
+    public String home() {
+        return "index";
     }
 }
